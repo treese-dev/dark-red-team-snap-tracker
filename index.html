@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dark Red Team Snap Tracker</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        #videoContainer {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        #gameFilm {
+            width: 100%;
+            max-height: 400px;
+        }
+        #snapForm {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        #snapForm input, #snapForm button {
+            padding: 8px;
+            font-size: 16px;
+        }
+        #snapForm button {
+            background-color: #8B0000; /* Dark red color */
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        #snapForm button:hover {
+            background-color: #6B0000;
+        }
+        #downloadBtn {
+            display: block;
+            margin: 10px 0;
+            padding: 10px;
+            background-color: #007bff;
+            color: white;
+            text-align: center;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+        #downloadBtn:hover {
+            background-color: #0056b3;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background-color: white;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #8B0000; /* Dark red for headers */
+            color: white;
+        }
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+    <h1>Dark Red Team Snap Tracker</h1>
+    <div id="videoContainer">
+        <input type="file" id="videoInput" accept="video/*">
+        <video id="gameFilm" controls></video>
+    </div>
+    <form id="snapForm">
+        <input type="number" id="jerseyNumber" placeholder="Jersey Number" min="1" required>
+        <input type="number" id="snapCount" placeholder="Snaps Played" min="1" required>
+        <button type="submit">Log Snaps</button>
+    </form>
+    <a id="downloadBtn" href="#" style="display: none;">Download Snap Counts as CSV</a>
+    <h2>Summary</h2>
+    <table id="summaryTable">
+        <thead>
+            <tr>
+                <th>Jersey Number</th>
+                <th>Total Snaps</th>
+            </tr>
+        </thead>
+        <tbody id="summaryTableBody"></tbody>
+    </table>
+    <h2>Detailed Log</h2>
+    <table id="snapTable">
+        <thead>
+            <tr>
+                <th>Jersey Number</th>
+                <th>Snaps</th>
+                <th>Timestamp</th>
+            </tr>
+        </thead>
+        <tbody id="snapTableBody"></tbody>
+    </table>
+
+    <script>
+        // Load video
+        const videoInput = document.getElementById('videoInput');
+        const gameFilm = document.getElementById('gameFilm');
+        videoInput.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                gameFilm.src = URL.createObjectURL(file);
+                gameFilm.style.display = 'block';
+            }
+        });
+
+        // Load snaps from localStorage
+        let snaps = JSON.parse(localStorage.getItem('snaps')) || [];
+        const snapTableBody = document.getElementById('snapTableBody');
+        const summaryTableBody = document.getElementById('summaryTableBody');
+        const downloadBtn = document.getElementById('downloadBtn');
+
+        // Function to calculate summary
+        function getSummary() {
+            const summary = {};
+            snaps.forEach(snap => {
+                const jersey = snap.jersey;
+                summary[jersey] = (summary[jersey] || 0) + snap.snaps;
+            });
+            return summary;
+        }
+
+        // Function to render tables
+        function renderTables() {
+            // Render detailed log
+            snapTableBody.innerHTML = '';
+            snaps.forEach(snap => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${snap.jersey}</td>
+                    <td>${snap.snaps}</td>
+                    <td>${snap.timestamp}</td>
+                `;
+                snapTableBody.appendChild(row);
+            });
+
+            // Render summary
+            const summary = getSummary();
+            summaryTableBody.innerHTML = '';
+            Object.entries(summary).forEach(([jersey, totalSnaps]) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${jersey}</td>
+                    <td>${totalSnaps}</td>
+                `;
+                summaryTableBody.appendChild(row);
+            });
+
+            downloadBtn.style.display = snaps.length > 0 ? 'block' : 'none';
+        }
+
+        // Initial render
+        renderTables();
+
+        // Handle form submission
+        const snapForm = document.getElementById('snapForm');
+        snapForm.addEventListener('submit', (event) => {
+            event.preventDefault();
+            const jerseyNumber = document.getElementById('jerseyNumber').value;
+            const snapCount = parseInt(document.getElementById('snapCount').value);
+            if (jerseyNumber && snapCount > 0) {
+                const snap = {
+                    jersey: jerseyNumber,
+                    snaps: snapCount,
+                    timestamp: new Date().toLocaleString()
+                };
+                snaps.push(snap);
+                localStorage.setItem('snaps', JSON.stringify(snaps));
+                renderTables();
+                document.getElementById('jerseyNumber').value = '';
+                document.getElementById('snapCount').value = '';
+            }
+        });
+
+        // Download snaps as CSV
+        downloadBtn.addEventListener('click', () => {
+            const summary = getSummary();
+            const summaryCsv = ['Jersey Number,Total Snaps', ...Object.entries(summary).map(([jersey, snaps]) => `${jersey},${snaps}`)].join('\n');
+            const detailCsv = ['Jersey Number,Snaps,Timestamp', ...snaps.map(snap => `${snap.jersey},${snap.snaps},${snap.timestamp}`)].join('\n');
+            const csvContent = `Summary\n${summaryCsv}\n\nDetailed Log\n${detailCsv}`;
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            downloadBtn.href = URL.createObjectURL(blob);
+            downloadBtn.download = 'dark_red_team_snap_counts.csv';
+        });
+    </script>
+</body>
+</html>
