@@ -83,9 +83,8 @@
         <video id="gameFilm" controls></video>
     </div>
     <form id="snapForm">
-        <input type="number" id="jerseyNumber" placeholder="Jersey Number" min="1" required>
-        <input type="number" id="snapCount" placeholder="Snaps Played" min="1" required>
-        <button type="submit">Log Snaps</button>
+        <input type="number" id="jerseyNumber" placeholder="Jersey Number (Red Team)" min="1" required>
+        <button type="submit">Log Snap</button>
     </form>
     <a id="downloadBtn" href="#" style="display: none;">Download Snap Counts as CSV</a>
     <h2>Summary</h2>
@@ -103,7 +102,7 @@
         <thead>
             <tr>
                 <th>Jersey Number</th>
-                <th>Snaps</th>
+                <th>Snap</th>
                 <th>Timestamp</th>
             </tr>
         </thead>
@@ -115,91 +114,4 @@
         const videoInput = document.getElementById('videoInput');
         const gameFilm = document.getElementById('gameFilm');
         videoInput.addEventListener('change', (event) => {
-            const file = event.target.files[0];
-            if (file) {
-                gameFilm.src = URL.createObjectURL(file);
-                gameFilm.style.display = 'block';
-            }
-        });
-
-        // Load snaps from localStorage
-        let snaps = JSON.parse(localStorage.getItem('snaps')) || [];
-        const snapTableBody = document.getElementById('snapTableBody');
-        const summaryTableBody = document.getElementById('summaryTableBody');
-        const downloadBtn = document.getElementById('downloadBtn');
-
-        // Function to calculate summary
-        function getSummary() {
-            const summary = {};
-            snaps.forEach(snap => {
-                const jersey = snap.jersey;
-                summary[jersey] = (summary[jersey] || 0) + snap.snaps;
-            });
-            return summary;
-        }
-
-        // Function to render tables
-        function renderTables() {
-            // Render detailed log
-            snapTableBody.innerHTML = '';
-            snaps.forEach(snap => {
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${snap.jersey}</td>
-                    <td>${snap.snaps}</td>
-                    <td>${snap.timestamp}</td>
-                `;
-                snapTableBody.appendChild(row);
-            });
-
-            // Render summary
-            const summary = getSummary();
-            summaryTableBody.innerHTML = '';
-            Object.entries(summary).forEach(([jersey, totalSnaps]) => {
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${jersey}</td>
-                    <td>${totalSnaps}</td>
-                `;
-                summaryTableBody.appendChild(row);
-            });
-
-            downloadBtn.style.display = snaps.length > 0 ? 'block' : 'none';
-        }
-
-        // Initial render
-        renderTables();
-
-        // Handle form submission
-        const snapForm = document.getElementById('snapForm');
-        snapForm.addEventListener('submit', (event) => {
-            event.preventDefault();
-            const jerseyNumber = document.getElementById('jerseyNumber').value;
-            const snapCount = parseInt(document.getElementById('snapCount').value);
-            if (jerseyNumber && snapCount > 0) {
-                const snap = {
-                    jersey: jerseyNumber,
-                    snaps: snapCount,
-                    timestamp: new Date().toLocaleString()
-                };
-                snaps.push(snap);
-                localStorage.setItem('snaps', JSON.stringify(snaps));
-                renderTables();
-                document.getElementById('jerseyNumber').value = '';
-                document.getElementById('snapCount').value = '';
-            }
-        });
-
-        // Download snaps as CSV
-        downloadBtn.addEventListener('click', () => {
-            const summary = getSummary();
-            const summaryCsv = ['Jersey Number,Total Snaps', ...Object.entries(summary).map(([jersey, snaps]) => `${jersey},${snaps}`)].join('\n');
-            const detailCsv = ['Jersey Number,Snaps,Timestamp', ...snaps.map(snap => `${snap.jersey},${snap.snaps},${snap.timestamp}`)].join('\n');
-            const csvContent = `Summary\n${summaryCsv}\n\nDetailed Log\n${detailCsv}`;
-            const blob = new Blob([csvContent], { type: 'text/csv' });
-            downloadBtn.href = URL.createObjectURL(blob);
-            downloadBtn.download = 'dark_red_team_snap_counts.csv';
-        });
-    </script>
-</body>
-</html>
+            const file = event.target
